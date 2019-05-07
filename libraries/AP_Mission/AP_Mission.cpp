@@ -685,6 +685,9 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.location.flags.loiter_xtrack = (packet.param4 > 0); // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
         break;
 
+    case MAV_CMD_NAV_NEWM:
+        break;
+
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
         copy_location = true;
         cmd.p1 = packet.param1;                         // delay at waypoint in seconds
@@ -1139,6 +1142,9 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
             packet.param2 = -packet.param2;
         }
         packet.param4 = cmd.content.location.flags.loiter_xtrack; // 0 to xtrack from center of waypoint, 1 to xtrack from tangent exit location
+        break;
+
+    case MAV_CMD_NAV_NEWM:                               //MAV ID:34
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:                   // MAV ID: 82
@@ -1793,6 +1799,8 @@ const char *AP_Mission::Mission_Command::type() const {
         return "SetROI";
     case MAV_CMD_DO_SET_REVERSE:
         return "SetReverse";
+    case MAV_CMD_NAV_NEWM:
+        return "NewM";
     default:
         return "?";
     }

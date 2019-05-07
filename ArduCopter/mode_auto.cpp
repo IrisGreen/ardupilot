@@ -97,6 +97,10 @@ void Copter::ModeAuto::run()
     case Auto_NavPayloadPlace:
         payload_place_run();
         break;
+
+    case Auto_NewM:
+        newm_run();
+        break;
     }
 }
 
@@ -130,6 +134,13 @@ void Copter::ModeAuto::rtl_start()
 
     // call regular rtl flight mode initialisation and ask it to ignore checks
     copter.mode_rtl.init(true);
+}
+
+
+void Copter::ModeAuto::newm_start()
+{
+    _mode =Auto_NewM;
+    copter.mode_newmode.init(true);
 }
 
 // auto_takeoff_start - initialises waypoint controller to implement take-off
@@ -349,6 +360,8 @@ bool Copter::ModeAuto::landing_gear_should_be_deployed() const
         return true;
     case Auto_RTL:
         return copter.mode_rtl.landing_gear_should_be_deployed();
+    case Auto_NewM:
+        return copter.mode_newmode.landing_gear_should_be_deployed();
     default:
         return false;
     }
@@ -410,6 +423,10 @@ bool Copter::ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:             //20
         do_RTL();
+        break;
+
+    case MAV_CMD_NAV_NEWM:
+        do_newm();
         break;
 
     case MAV_CMD_NAV_SPLINE_WAYPOINT:           // 82  Navigate to Waypoint using spline
@@ -673,6 +690,9 @@ bool Copter::ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
         return verify_RTL();
 
+    case MAV_CMD_NAV_NEWM:
+        return verify_NewM();
+
     case MAV_CMD_NAV_SPLINE_WAYPOINT:
         return verify_spline_wp(cmd);
 
@@ -882,6 +902,11 @@ void Copter::ModeAuto::rtl_run()
 {
     // call regular rtl flight mode run function
     copter.mode_rtl.run(false);
+}
+
+void Copter::ModeAuto::newm_run()
+{
+    copter.mode_newmode.run(false);
 }
 
 // auto_circle_run - circle in AUTO flight mode
@@ -1114,6 +1139,9 @@ void Copter::ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
                 break;
             case MAV_CMD_NAV_RETURN_TO_LAUNCH:
                 // do not stop for RTL
+                fast_waypoint = true;
+                break;
+            case MAV_CMD_NAV_NEWM:
                 fast_waypoint = true;
                 break;
             case MAV_CMD_NAV_TAKEOFF:
@@ -1532,6 +1560,11 @@ void Copter::ModeAuto::do_RTL(void)
     rtl_start();
 }
 
+void Copter::ModeAuto::do_newm(void)
+{
+    newm_start();
+}
+
 /********************************************************************************/
 //	Verify Nav (Must) commands
 /********************************************************************************/
@@ -1770,6 +1803,15 @@ bool Copter::ModeAuto::verify_RTL()
 {
     return (copter.mode_rtl.state_complete() && (copter.mode_rtl.state() == RTL_FinalDescent || copter.mode_rtl.state() == RTL_Land));
 }
+
+// verify_NewM - handles any state changes required to implement RTL
+// do_RTL should have been called once first to initialise all variables
+// returns true with RTL has completed successfully
+bool Copter::ModeAuto::verify_NewM()
+{
+    return (copter.mode_newmode.state_complete() && (copter.mode_newmode.state() == NewM_LoiterAtHome));
+}
+
 
 /********************************************************************************/
 // Verify Condition (May) commands

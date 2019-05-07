@@ -314,29 +314,45 @@ private:
             uint8_t unused1                 : 1; // 0
             uint8_t simple_mode             : 2; // 1,2     // This is the state of simple mode : 0 = disabled ; 1 = SIMPLE ; 2 = SUPERSIMPLE
             uint8_t pre_arm_rc_check        : 1; // 3       // true if rc input pre-arm checks have been completed successfully
+                                                            // 当遥控器的预解锁成功，返回true
             uint8_t pre_arm_check           : 1; // 4       // true if all pre-arm checks (rc, accel calibration, gps lock) have been performed
+                                                            // 当所有的预解锁成功(包括遥控器、加速度计、GPS锁定)，返回true
             uint8_t auto_armed              : 1; // 5       // stops auto missions from beginning until throttle is raised
+                                                            // 在自动模式下，任务开始时自动上锁，直到油门拉高，上锁时返回1
             uint8_t logging_started         : 1; // 6       // true if dataflash logging has started
             uint8_t land_complete           : 1; // 7       // true if we have detected a landing
+                                                            // 着陆时返回true
             uint8_t new_radio_frame         : 1; // 8       // Set true if we have new PWM data to act on from the Radio
             uint8_t usb_connected_unused    : 1; // 9       // UNUSED
             uint8_t rc_receiver_present     : 1; // 10      // true if we have an rc receiver present (i.e. if we've ever received an update
             uint8_t compass_mot             : 1; // 11      // true if we are currently performing compassmot calibration
             uint8_t motor_test              : 1; // 12      // true if we are currently performing the motors test
             uint8_t initialised             : 1; // 13      // true once the init_ardupilot function has completed.  Extended status to GCS is not sent until this completes
+                                                            // 当init_ardupilot函数执行完成后，返回true
             uint8_t land_complete_maybe     : 1; // 14      // true if we may have landed (less strict version of land_complete)
+                                                            // 可能着陆时返回true
             uint8_t throttle_zero           : 1; // 15      // true if the throttle stick is at zero, debounced, determines if pilot intends shut-down when not using motor interlock
+                                                            // 当油门摇杆为0位，去抖动，决定是否在不使用电机联锁时关闭电机
             uint8_t system_time_set_unused  : 1; // 16      // true if the system time has been set from the GPS
             uint8_t gps_glitching           : 1; // 17      // true if GPS glitching is affecting navigation accuracy
+                                                            // 当GPS失灵影响导航精度时，返回true
             uint8_t using_interlock         : 1; // 20      // aux switch motor interlock function is in use
+                                                            // 遥控器辅助通道电机联锁功能启用，返回true
             uint8_t motor_emergency_stop    : 1; // 21      // motor estop switch, shuts off motors when enabled
+                                                            // true时，可启用电机紧急制动功能
             uint8_t land_repo_active        : 1; // 22      // true if the pilot is overriding the landing position
+                                                            // 飞行器override降落位置
             uint8_t motor_interlock_switch  : 1; // 23      // true if pilot is requesting motor interlock enable
+                                                            // 飞行器请求电机联锁时，返回true
             uint8_t in_arming_delay         : 1; // 24      // true while we are armed but waiting to spin motors
+                                                            // 电机解锁，但未安装电机时，返回true
             uint8_t initialised_params      : 1; // 25      // true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
+                                                            // 所有参数均已初始化，返回true，传递参数给GCS必须在这之后
             uint8_t compass_init_location   : 1; // 26      // true when the compass's initial location has been set
+                                                            // 罗盘初始位置设置完成，返回true
             uint8_t rc_override_enable      : 1; // 27      // aux switch rc_override is allowed
             uint8_t armed_with_switch       : 1; // 28      // we armed using a arming switch
+                                                            // 解锁开关解锁
         };
         uint32_t value;
     } ap_t;
@@ -678,6 +694,7 @@ private:
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
+    void update_camera();
 
     // Attitude.cpp
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
@@ -704,6 +721,7 @@ private:
     void init_capabilities(void);
 
     // commands.cpp
+    bool gps_lock_flag=true;
     void update_home_from_EKF();
     void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock);
@@ -1009,7 +1027,9 @@ private:
 #if !HAL_MINIMIZE_FEATURES && OPTFLOW == ENABLED
     ModeFlowHold mode_flowhold;
 #endif
-
+#if MODE_NEWMODE_ENABLED == ENABLED
+    ModeNEWMODE mode_newmode;
+#endif
     // mode.cpp
     Mode *mode_from_mode_num(const uint8_t mode);
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);

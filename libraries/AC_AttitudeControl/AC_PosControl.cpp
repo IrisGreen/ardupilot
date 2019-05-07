@@ -463,7 +463,7 @@ void AC_PosControl::init_takeoff()
 // is_active_z - returns true if the z-axis position controller has been run very recently
 bool AC_PosControl::is_active_z() const
 {
-    return ((AP_HAL::micros64() - _last_update_z_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);
+    return ((AP_HAL::micros64() - _last_update_z_us) <= POSCONTROL_ACTIVE_TIMEOUT_US);   // <0.2s
 }
 
 /// update_z_controller - fly to altitude in cm above home
@@ -702,23 +702,26 @@ void AC_PosControl::set_target_to_stopping_point_xy()
 ///     set_leash_length() should have been called before this method
 void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
 {
-    const Vector3f curr_pos = _inav.get_position();
-    Vector3f curr_vel = _inav.get_velocity();
+    const Vector3f curr_pos = _inav.get_position();   //当前位置
+    Vector3f curr_vel = _inav.get_velocity();         //当前速度
     float linear_distance;      // the distance at which we swap from a linear to sqrt response
     float linear_velocity;      // the velocity above which we swap from a linear to sqrt response
     float stopping_dist;		// the distance within the vehicle can stop
     float kP = _p_pos_xy.kP();
 
     // add velocity error to current velocity
+    // 当前速度上增加速度误差
     if (is_active_xy()) {
         curr_vel.x += _vel_error.x;
         curr_vel.y += _vel_error.y;
     }
 
     // calculate current velocity
+    // 计算xy平面的速度
     float vel_total = norm(curr_vel.x, curr_vel.y);
 
     // avoid divide by zero by using current position if the velocity is below 10cm/s, kP is very low or acceleration is zero
+    // 如果速度低于10cm/s, kP很低或者加速度为零,使用当前位置，避免被0除
     if (kP <= 0.0f || _accel_cms <= 0.0f || is_zero(vel_total)) {
         stopping_point.x = curr_pos.x;
         stopping_point.y = curr_pos.y;
@@ -726,6 +729,7 @@ void AC_PosControl::get_stopping_point_xy(Vector3f &stopping_point) const
     }
 
     // calculate point at which velocity switches from linear to sqrt
+    // 计算速度从线性转换到sqrt的点
     linear_velocity = _accel_cms/kP;
 
     // calculate distance within which we can stop
@@ -1096,6 +1100,7 @@ void AC_PosControl::run_xy_controller(float dt, float ekfNavVelGainScaler)
 }
 
 // get_lean_angles_to_accel - convert roll, pitch lean angles to lat/lon frame accelerations in cm/s/s
+//把roll pitch 上的倾斜角度转换成lat lon上的加速度
 void AC_PosControl::accel_to_lean_angles(float accel_x_cmss, float accel_y_cmss, float& roll_target, float& pitch_target) const
 {
     float accel_right, accel_forward;

@@ -117,6 +117,8 @@ public:
     virtual void packetReceived(const mavlink_status_t &status,
                                 mavlink_message_t &msg);
 
+
+
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
 
@@ -197,6 +199,7 @@ public:
     void send_servo_output_raw();
     static void send_collision_all(const AP_Avoidance::Obstacle &threat, MAV_COLLISION_ACTION behaviour);
     void send_accelcal_vehicle_position(uint32_t position);
+    void send_newm_camera(void);
 
     // return a bitmap of active channels. Used by libraries to loop
     // over active channels to send to all active channels    

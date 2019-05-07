@@ -127,13 +127,13 @@ ArduCopter/mode_guided.cpp
 ArduCopter/mode_guided_nogps.cpp
 ArduCopter/mode_land.cpp
 ArduCopter/mode_loiter.cpp
+ArduCopter/mode_newmode.cpp
 ArduCopter/mode_poshold.cpp
 ArduCopter/mode_rtl.cpp
 ArduCopter/mode_smart_rtl.cpp
 ArduCopter/mode_sport.cpp
 ArduCopter/mode_stabilize.cpp
 ArduCopter/mode_stabilize_heli.cpp
-ArduCopter/mode_throw.cpp
 ArduCopter/motor_test.cpp
 ArduCopter/motors.cpp
 ArduCopter/navigation.cpp

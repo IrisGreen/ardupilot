@@ -170,7 +170,7 @@ static int main_loop(int argc, char **argv)
       run setup() at low priority to ensure CLI doesn't hang the
       system, and to allow initial sensor read loops to run
      */
-    hal_px4_set_priority(APM_STARTUP_PRIORITY);
+    hal_px4_set_priority(APM_STARTUP_PRIORITY);  //10
 
     schedulerInstance.hal_initialized();
 
@@ -186,7 +186,7 @@ static int main_loop(int argc, char **argv)
     /*
       switch to high priority for main loop
      */
-    hal_px4_set_priority(APM_MAIN_PRIORITY);
+    hal_px4_set_priority(APM_MAIN_PRIORITY);   //180
 
     while (!_px4_thread_should_exit) {
         perf_begin(perf_loop);
@@ -206,7 +206,7 @@ static int main_loop(int argc, char **argv)
               we ran over 1s in loop(), and our priority was lowered
               to let a driver run. Set it back to high priority now.
              */
-            hal_px4_set_priority(APM_MAIN_PRIORITY);
+            hal_px4_set_priority(APM_MAIN_PRIORITY);  //180
             perf_count(perf_overrun);
             px4_ran_overtime = false;
         }
@@ -264,6 +264,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
                 exit(0);
             }
 
+            //先初始化串口，再新建主任务
             uartADriver.set_device_path(deviceA);
             uartCDriver.set_device_path(deviceC);
             uartDDriver.set_device_path(deviceD);
@@ -279,7 +280,7 @@ void HAL_PX4::run(int argc, char * const argv[], Callbacks* callbacks) const
                                              APM_MAIN_PRIORITY,
                                              APM_MAIN_THREAD_STACK_SIZE,
                                              main_loop,
-                                             nullptr);
+                                             nullptr);  //创建main_loop
             exit(0);
         }
 

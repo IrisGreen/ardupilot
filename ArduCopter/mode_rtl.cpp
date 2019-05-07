@@ -11,13 +11,13 @@
 bool Copter::ModeRTL::init(bool ignore_checks)
 {
     if (copter.position_ok() || ignore_checks) {
-        // initialise waypoint and spline controller
-        wp_nav->wp_and_spline_init();
-        build_path(!copter.failsafe.terrain);
-        climb_start();
-        return true;
-    }else{
-        return false;
+            // initialise waypoint and spline controller
+            wp_nav->wp_and_spline_init();
+            build_path(!copter.failsafe.terrain);
+            climb_start();
+            return true;
+        }else{
+            return false;
     }
 }
 
@@ -144,6 +144,9 @@ void Copter::ModeRTL::climb_return_run()
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
         if (!is_zero(target_yaw_rate)) {
             auto_yaw.set_mode(AUTO_YAW_HOLD);
+        }
+        else{
+            auto_yaw.set_mode(AUTO_YAW_LOOK_AHEAD);
         }
     }
 
@@ -393,9 +396,11 @@ void Copter::ModeRTL::build_path(bool terrain_following_allowed)
     compute_return_target(terrain_following_allowed);
 
     // climb target is above our origin point at the return altitude
+    // 返航高
     rtl_path.climb_target = Location_Class(rtl_path.origin_point.lat, rtl_path.origin_point.lng, rtl_path.return_target.alt, rtl_path.return_target.get_alt_frame());
 
     // descent target is below return target at rtl_alt_final
+    // 到达HOME点悬停高度到达HOME点悬停高度
     rtl_path.descent_target = Location_Class(rtl_path.return_target.lat, rtl_path.return_target.lng, g.rtl_alt_final, Location_Class::ALT_FRAME_ABOVE_HOME);
 
     // set land flag

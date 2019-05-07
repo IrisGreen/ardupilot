@@ -278,6 +278,7 @@ public:
 
     bool loiter_start();
     void rtl_start();
+    void newm_start();
     void takeoff_start(const Location& dest_loc);
     void wp_start(const Vector3f& destination);
     void wp_start(const Location_Class& dest_loc);
@@ -325,6 +326,7 @@ private:
     void spline_run();
     void land_run();
     void rtl_run();
+    void newm_run();
     void circle_run();
     void nav_guided_run();
     void loiter_run();
@@ -374,6 +376,7 @@ private:
 #endif
     void do_payload_place(const AP_Mission::Mission_Command& cmd);
     void do_RTL(void);
+    void do_newm(void);
 
     bool verify_takeoff();
     bool verify_land();
@@ -381,6 +384,7 @@ private:
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_RTL();
+    bool verify_NewM();
     bool verify_wait_delay();
     bool verify_within_distance();
     bool verify_yaw();
@@ -1002,23 +1006,26 @@ protected:
     void land_start();
     void land_run(bool disarm_on_land);
 
-    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
-
-private:
-
+    void build_path(bool terrain_following_allowed);
     void climb_start();
     void return_start();
     void climb_return_run();
-    void loiterathome_start();
-    void loiterathome_run();
-    void build_path(bool terrain_following_allowed);
+
+    void set_descent_target_alt(uint32_t alt) { rtl_path.descent_target.alt = alt; }
+    bool get_land(){bool land_flag;land_flag=rtl_path.land;return land_flag;}
+    bool _state_complete = false; // set to true if the current state is completed
+
+private:
+
     void compute_return_target(bool terrain_following_allowed);
 
     // RTL
-    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
-    bool _state_complete = false; // set to true if the current state is completed
+    RTLState _state = RTL_InitialClimb;  // records state of rtl (initial climb, reTURNING TO HOME
 
-    struct {
+    void loiterathome_start();
+    void loiterathome_run();
+
+    struct{
         // NEU w/ Z element alt-above-ekf-origin unless use_terrain is true in which case Z element is alt-above-terrain
         Location_Class origin_point;
         Location_Class climb_target;
@@ -1026,10 +1033,11 @@ private:
         Location_Class descent_target;
         bool land;
         bool terrain_used;
-    } rtl_path;
+    }rtl_path;
 
     // Loiter timer - Records how long we have been in loiter
     uint32_t _loiter_start_time = 0;
+
 };
 
 
@@ -1137,56 +1145,6 @@ private:
 };
 #endif
 
-
-class ModeThrow : public Mode {
-
-public:
-    // inherit constructor
-    using Copter::Mode::Mode;
-
-    bool init(bool ignore_checks) override;
-    void run() override;
-
-    bool requires_GPS() const override { return true; }
-    bool has_manual_throttle() const override { return false; }
-    bool allows_arming(bool from_gcs) const override { return true; };
-    bool is_autopilot() const override { return false; }
-
-    // Throw types
-    enum ThrowModeType {
-        ThrowType_Upward = 0,
-        ThrowType_Drop = 1
-    };
-
-protected:
-
-    const char *name() const override { return "THROW"; }
-    const char *name4() const override { return "THRW"; }
-
-private:
-
-    bool throw_detected();
-    bool throw_position_good();
-    bool throw_height_good();
-    bool throw_attitude_good();
-
-    // Throw stages
-    enum ThrowModeStage {
-        Throw_Disarmed,
-        Throw_Detecting,
-        Throw_Uprighting,
-        Throw_HgtStabilise,
-        Throw_PosHold
-    };
-
-    ThrowModeStage stage = Throw_Disarmed;
-    ThrowModeStage prev_stage = Throw_Disarmed;
-    uint32_t last_log_ms;
-    bool nextmode_attempted;
-    uint32_t free_fall_start_ms;    // system time free fall was detected
-    float free_fall_start_velz;     // vertical velocity when free fall was detected
-};
-
 // modes below rely on Guided mode so must be declared at the end (instead of in alphabetical order)
 
 class ModeAvoidADSB : public ModeGuided {
@@ -1238,4 +1196,40 @@ protected:
     bool get_wp(Location_Class &loc) override;
 
     uint32_t last_log_ms;   // system time of last time desired velocity was logging
+};
+
+class ModeNEWMODE : public ModeRTL {
+
+public:
+    using Copter::ModeRTL::Mode;
+
+    bool init(bool ignore_checks) override;
+    void run() override {
+        return run(true);
+    }
+    void run(bool disarm_on_land) ;
+
+    NewModeState state() { return newm_state; }
+
+    bool requires_GPS() const override { return true; }
+    bool has_manual_throttle() const override { return false; }
+    bool allows_arming(bool from_gcs) const override { return false; }
+    bool is_autopilot() const override { return true; }
+
+protected:
+
+    const char *name() const override { return "SMARTRTL"; }
+    const char *name4() const override { return "SRTL"; }
+
+    uint32_t wp_distance() const override;
+    int32_t wp_bearing() const override;
+
+private:
+
+    NewModeState newm_state = NewM_InitialClimb;  // records state of rtl (initial climb, returning home, etc)
+
+    void loiterathome_start();
+    void loiterathome_run();
+
+
 };

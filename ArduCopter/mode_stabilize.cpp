@@ -24,12 +24,14 @@ void Copter::ModeStabilize::run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
 
+    //如果电机未解锁，则立即退出
     // if not armed set throttle to zero and exit immediately
     if (!motors->armed() || ap.throttle_zero || !motors->get_interlock()) {
         zero_throttle_and_relax_ac();
         return;
     }
 
+    
     // clear landing flag
     set_land_complete(false);
 

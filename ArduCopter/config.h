@@ -343,10 +343,11 @@
 # define MODE_SPORT_ENABLED !HAL_MINIMIZE_FEATURES
 #endif
 
+
 //////////////////////////////////////////////////////////////////////////////
-// Throw - fly vehicle after throwing it in the air
-#ifndef MODE_THROW_ENABLED
-# define MODE_THROW_ENABLED ENABLED
+// NewMode -
+#ifndef MODE_NEWMODE_ENABLED
+# define MODE_NEWMODE_ENABLED ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

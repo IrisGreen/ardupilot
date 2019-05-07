@@ -14,14 +14,14 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @Description: Precision Land enabled/disabled and behaviour
     // @Values: 0:Disabled, 1:Enabled Always Land, 2:Enabled Strict
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 1, AP_PARAM_FLAG_ENABLE),
 
     // @Param: TYPE
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
     // @Values: 0:None, 1:CompanionComputer, 2:IRLock, 3:SITL_Gazebo, 4:SITL
     // @User: Advanced
-    AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
+    AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 1),
 
     // @Param: YAW_ALIGN
     // @DisplayName: Sensor yaw alignment
@@ -153,6 +153,7 @@ void AC_PrecLand::init()
     }
 }
 
+
 // update - give chance to driver to get updates from sensor
 void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
 {
@@ -162,7 +163,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     Vector3f curr_vel;
     nav_filter_status status;
-    if (!_ahrs.get_velocity_NED(curr_vel) || !_ahrs.get_filter_status(status)) {
+    if (!_ahrs.get_velocity_NED(curr_vel) || !_ahrs.get_filter_status(status)) {  // if didnt get ground velocity in NED order
         inertial_data_newest.inertialNavVelocityValid = false;
     } else {
         inertial_data_newest.inertialNavVelocityValid = status.flags.horiz_vel;
@@ -178,6 +179,7 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
         run_estimator(rangefinder_alt_cm*0.01f, rangefinder_alt_valid);
     }
 }
+
 
 bool AC_PrecLand::target_acquired()
 {
@@ -281,6 +283,7 @@ void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_va
             }
 
             // Update if a new LOS measurement is available
+            // 只有当激光测距仪可用，或者通过相机返回了距离信息，才进入
             if (construct_pos_meas_using_rangefinder(rangefinder_alt_m, rangefinder_alt_valid)) {
                 float xy_pos_var = sq(_target_pos_rel_meas_NED.z*(0.01f + 0.01f*_ahrs.get_gyro().length()) + 0.02f);
                 if (!target_acquired()) {
@@ -352,9 +355,9 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
         const struct inertial_data_frame_s& inertial_data_delayed = _inertial_history.front();
 
         Vector3f target_vec_unit_ned = inertial_data_delayed.Tbn * target_vec_unit_body;
-        bool target_vec_valid = target_vec_unit_ned.z > 0.0f;
+        bool target_vec_valid = target_vec_unit_ned.z > 0.0f;  // always be 1.0f
         bool alt_valid = (rangefinder_alt_valid && rangefinder_alt_m > 0.0f) || (_backend->distance_to_target() > 0.0f);
-        if (target_vec_valid && alt_valid) {
+        if (target_vec_valid && alt_valid) {  // 只有当激光测距仪可用，或者通过相机返回了距离信息，才进入
             float dist, alt;
             if (_backend->distance_to_target() > 0.0f) {
                 dist = _backend->distance_to_target();

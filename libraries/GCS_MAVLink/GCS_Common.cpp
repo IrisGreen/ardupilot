@@ -229,6 +229,8 @@ bool GCS_MAVLINK::send_battery_status() const
     return true;
 }
 
+
+
 void GCS_MAVLINK::send_distance_sensor(const AP_RangeFinder_Backend *sensor, const uint8_t instance) const
 {
     if (!sensor->has_data()) {
@@ -1235,6 +1237,12 @@ void GCS_MAVLINK::send_ahrs()
         0,
         ahrs.get_error_rp(),
         ahrs.get_error_yaw());
+}
+
+void GCS_MAVLINK::send_newm_camera()
+{
+    mavlink_msg_landing_target_send(chan,0,0,0,173.7841186,129.5321,0,0,0,0,0,0,0,0,0);
+   // mavlink_msg_newmode_camera_send(chan, 0x0b,0x0b,0x0b,0x0b);
 }
 
 /*
@@ -2872,6 +2880,7 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(HEARTBEAT);
         last_heartbeat_time = AP_HAL::millis();
         send_heartbeat();
+       // send_newm_camera();
         break;
 
     case MSG_HWSTATUS:

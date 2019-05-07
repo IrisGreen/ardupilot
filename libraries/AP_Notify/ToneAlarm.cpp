@@ -89,6 +89,8 @@ const AP_ToneAlarm::Tone AP_ToneAlarm::_tones[] {
     { "MFT200L4<B#4A#6G#6", false },
 #define AP_NOTIFY_TONE_STARTUP 29
     { "MFT240L8O4aO5dcO4aO5dcO4aO5dcL16dcdcdcdc", false },
+#define AP_NOTIFY_TONE_GPS_LOCKED 30
+    { "MFT200L4<B#A#",false},
 };
 
 bool AP_ToneAlarm::init()
@@ -221,6 +223,11 @@ void AP_ToneAlarm::update()
 
     // don't play other tones if compass cal is running
     if (AP_Notify::flags.compass_cal_running) {
+        return;
+    }
+    
+    if (AP_Notify::events.gps_locked){
+        play_tone(AP_NOTIFY_TONE_GPS_LOCKED);
         return;
     }
 

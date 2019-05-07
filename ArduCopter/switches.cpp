@@ -50,28 +50,38 @@ void Copter::read_control_switch()
     bool sufficient_time_elapsed = tnow_ms - control_switch_state.last_edge_time_ms > CONTROL_SWITCH_DEBOUNCE_TIME_MS;
     bool failsafe_disengaged = !failsafe.radio && failsafe.radio_counter == 0;
 
-    if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged) {
+    if (control_switch_changed && sufficient_time_elapsed && failsafe_disengaged)
+    {
         // set flight mode and simple mode setting
-        if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND)) {
+        if (set_mode((control_mode_t)flight_modes[switch_position].get(), MODE_REASON_TX_COMMAND))
+        {
             // play a tone
-            if (control_switch_state.debounced_switch_position != -1) {
+            if (control_switch_state.debounced_switch_position != -1)
+            {
                 // alert user to mode change (except if autopilot is just starting up)
-                if (ap.initialised) {
+                if (ap.initialised)
+                {
                     AP_Notify::events.user_mode_change = 1;
                 }
             }
 
-            if (!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE)) {
+            if (!check_if_auxsw_mode_used(AUXSW_SIMPLE_MODE) && !check_if_auxsw_mode_used(AUXSW_SUPERSIMPLE_MODE))
+            {
                 // if none of the Aux Switches are set to Simple or Super Simple Mode then
                 // set Simple Mode using stored parameters from EEPROM
-                if (BIT_IS_SET(g.super_simple, switch_position)) {
+                if (BIT_IS_SET(g.super_simple, switch_position))
+                {
                     set_simple_mode(2);
-                } else {
+                }
+                else
+                {
                     set_simple_mode(BIT_IS_SET(g.simple_modes, switch_position));
                 }
             }
 
-        } else if (control_switch_state.last_switch_position != -1) {
+        }
+        else if (control_switch_state.last_switch_position != -1)
+        {
             // alert user to mode change failure
             AP_Notify::events.user_mode_change_failed = 1;
         }

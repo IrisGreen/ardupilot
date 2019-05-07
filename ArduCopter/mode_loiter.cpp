@@ -7,8 +7,10 @@
 // loiter_init - initialise loiter controller
 bool Copter::ModeLoiter::init(bool ignore_checks)
 {
-    if (copter.position_ok() || ignore_checks) {
-        if (!copter.failsafe.radio) {
+    if (copter.position_ok() || ignore_checks)
+    {
+        if (!copter.failsafe.radio)
+        {
             float target_roll, target_pitch;
             // apply SIMPLE mode transform to pilot inputs
             update_simple_mode();
@@ -18,20 +20,27 @@ bool Copter::ModeLoiter::init(bool ignore_checks)
 
             // process pilot's roll and pitch input
             loiter_nav->set_pilot_desired_acceleration(target_roll, target_pitch, G_Dt);
-        } else {
+        }
+        else {
             // clear out pilot desired acceleration in case radio failsafe event occurs and we do not switch to RTL for some reason
             loiter_nav->clear_pilot_desired_acceleration();
         }
+        //从当前位置和速度初始化位置和前馈速度
         loiter_nav->init_target();
 
         // initialise position and desired velocity
-        if (!pos_control->is_active_z()) {
-            pos_control->set_alt_target_to_current_alt();
-            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z());
+        //初始化位置和期望的速度
+        //高度控制器激活，则返回true
+        if (!pos_control->is_active_z())    //高度控制器没有激活
+        {
+            pos_control->set_alt_target_to_current_alt();         //设置期望高度为当前高度
+            pos_control->set_desired_velocity_z(inertial_nav.get_velocity_z()); //设置期望Z轴速度为当前速度
         }
 
         return true;
-    } else {
+    }
+    else
+    {
         return false;
     }
 }

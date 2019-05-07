@@ -12,66 +12,6 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- *  ArduCopter (also known as APM, APM:Copter or just Copter)
- *  Wiki:           copter.ardupilot.org
- *  Creator:        Jason Short
- *  Lead Developer: Randy Mackay
- *  Lead Tester:    Marco Robustini
- *  Based on code and ideas from the Arducopter team: Leonard Hall, Andrew Tridgell, Robert Lefebvre, Pat Hickey, Michael Oborne, Jani Hirvinen,
-                                                      Olivier Adler, Kevin Hester, Arthur Benemann, Jonathan Challinger, John Arne Birkeland,
-                                                      Jean-Louis Naudin, Mike Smith, and more
- *  Thanks to:	Chris Anderson, Jordi Munoz, Jason Short, Doug Weibel, Jose Julio
- *
- *  Special Thanks to contributors (in alphabetical order by first name):
- *
- *  Adam M Rivera       :Auto Compass Declination
- *  Amilcar Lucas       :Camera mount library
- *  Andrew Tridgell     :General development, Mavlink Support
- *  Angel Fernandez     :Alpha testing
- *  AndreasAntonopoulous:GeoFence
- *  Arthur Benemann     :DroidPlanner GCS
- *  Benjamin Pelletier  :Libraries
- *  Bill King           :Single Copter
- *  Christof Schmid     :Alpha testing
- *  Craig Elder         :Release Management, Support
- *  Dani Saez           :V Octo Support
- *  Doug Weibel	        :DCM, Libraries, Control law advice
- *  Emile Castelnuovo   :VRBrain port, bug fixes
- *  Gregory Fletcher    :Camera mount orientation math
- *  Guntars             :Arming safety suggestion
- *  HappyKillmore       :Mavlink GCS
- *  Hein Hollander      :Octo Support, Heli Testing
- *  Igor van Airde      :Control Law optimization
- *  Jack Dunkle         :Alpha testing
- *  James Goppert       :Mavlink Support
- *  Jani Hiriven        :Testing feedback
- *  Jean-Louis Naudin   :Auto Landing
- *  John Arne Birkeland	:PPM Encoder
- *  Jose Julio          :Stabilization Control laws, MPU6k driver
- *  Julien Dubois       :PosHold flight mode
- *  Julian Oes          :Pixhawk
- *  Jonathan Challinger :Inertial Navigation, CompassMot, Spin-When-Armed
- *  Kevin Hester        :Andropilot GCS
- *  Max Levine          :Tri Support, Graphics
- *  Leonard Hall        :Flight Dynamics, Throttle, Loiter and Navigation Controllers
- *  Marco Robustini     :Lead tester
- *  Michael Oborne      :Mission Planner GCS
- *  Mike Smith          :Pixhawk driver, coding support
- *  Olivier Adler       :PPM Encoder, piezo buzzer
- *  Pat Hickey          :Hardware Abstraction Layer (HAL)
- *  Robert Lefebvre     :Heli Support, Copter LEDs
- *  Roberto Navoni      :Library testing, Porting to VRBrain
- *  Sandro Benigno      :Camera support, MinimOSD
- *  Sandro Tognana      :PosHold flight mode
- *  Sebastian Quilter   :SmartRTL
- *  ..and many more.
- *
- *  Code commit statistics can be found here: https://github.com/ArduPilot/ardupilot/graphs/contributors
- *  Wiki: http://copter.ardupilot.org/
- *  Requires modified version of Arduino, which can be found here: http://ardupilot.com/downloads/?category=6
- *
- */
 
 #include "Copter.h"
 
@@ -83,20 +23,21 @@
   and the maximum time they are expected to take (in microseconds)
  */
 const AP_Scheduler::Task Copter::scheduler_tasks[] = {
-    SCHED_TASK(rc_loop,              100,    130),
-    SCHED_TASK(throttle_loop,         50,     75),
-    SCHED_TASK(update_GPS,            50,    200),
+    SCHED_TASK(rc_loop,              100,    130),  //读取用户遥控输入，包括各通道输入和三段开关位置
+    SCHED_TASK(throttle_loop,         50,     75),  //读取飞行器高度和爬升速率，检查着陆和自锁状态
+    SCHED_TASK(update_GPS,            50,    200),  //更新GPS数据，执行GPS失效保护检查
+    SCHED_TASK(update_camera,         1,    20),    //update camera
 #if OPTFLOW == ENABLED
-    SCHED_TASK(update_optical_flow,  200,    160),
+    SCHED_TASK(update_optical_flow,  200,    160),  //光流可用，则更新光流数据
 #endif
-    SCHED_TASK(update_batt_compass,   10,    120),
-    SCHED_TASK(read_aux_switches,     10,     50),
-    SCHED_TASK(arm_motors_check,      10,     50),
+    SCHED_TASK(update_batt_compass,   10,    120),  //读取电池状态信息、罗盘数据
+    SCHED_TASK(read_aux_switches,     10,     50),  //读取辅助通道位置，并执行相应设定任务
+    SCHED_TASK(arm_motors_check,      10,     50),  //执行电机解锁前检查初始化，实现电机加解锁
 #if TOY_MODE_ENABLED == ENABLED
     SCHED_TASK_CLASS(ToyMode,              &copter.g2.toy_mode,         update,          10,  50),
 #endif
-    SCHED_TASK(auto_disarm_check,     10,     50),
-    SCHED_TASK(auto_trim,             10,     75),
+    SCHED_TASK(auto_disarm_check,     10,     50),  //
+    SCHED_TASK(auto_trim,             10,     75),  //自动微调，电机需保持解锁动作10秒才可进入该模式
 #if RANGEFINDER_ENABLED == ENABLED
     SCHED_TASK(read_rangefinder,      20,    100),
 #endif
@@ -109,9 +50,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if VISUAL_ODOMETRY_ENABLED == ENABLED
     SCHED_TASK(update_visual_odom,   400,     50),
 #endif
-    SCHED_TASK(update_altitude,       10,    100),
-    SCHED_TASK(run_nav_updates,       50,    100),
-    SCHED_TASK(update_throttle_hover,100,     90),
+    SCHED_TASK(update_altitude,       10,    100),   //从气压计和声呐获取飞行器高度
+    SCHED_TASK(run_nav_updates,       50,    100),   //根据当前位置计算到下一个航点或home点的距离和方位
+    SCHED_TASK(update_throttle_hover,100,     90),   //获取油门微调值，设置飞行器悬停时的油门值
 #if MODE_SMARTRTL_ENABLED == ENABLED
     SCHED_TASK_CLASS(Copter::ModeSmartRTL, &copter.mode_smartrtl,       save_position,    3, 100),
 #endif
@@ -128,7 +69,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(fourhundred_hz_logging,400,    50),
 #endif
     SCHED_TASK_CLASS(AP_Notify,            &copter.notify,              update,          50,  90),
-    SCHED_TASK(one_hz_loop,            1,    100),
+    SCHED_TASK(one_hz_loop,            1,    100),   //执行日志记录、自动加锁检查、更新云台状态、检查与地面站的连接方式、更新地形
     SCHED_TASK(ekf_check,             10,     75),
     SCHED_TASK(gpsglitch_check,       10,     50),
     SCHED_TASK(landinggear_update,    10,     75),
@@ -136,7 +77,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(gcs_check_input,      400,    180),
     SCHED_TASK(gcs_send_heartbeat,     1,    110),
     SCHED_TASK(gcs_send_deferred,     50,    550),
-    SCHED_TASK(gcs_data_stream_send,  50,    550),
+    SCHED_TASK(gcs_data_stream_send,  50,    550),    //数据发送到地面站
 #if MOUNT == ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75),
 #endif
@@ -219,16 +160,21 @@ void Copter::loop()
 void Copter::fast_loop()
 {
     // update INS immediately to get current gyro data populated
+    //立即从gyro中获得姿态数据
     ins.update();
 
     // run low level rate controllers that only require IMU data
+    //低频率地运行只需要IMU数据的rate_controller
+    //运行各通道(滚转、俯仰、偏航）的速率控制器，调用PID控制器进行调控
     attitude_control->rate_controller_run();
 
     // send outputs to the motors library immediately
+    //输出电机控制信号
     motors_output();
 
     // run EKF state estimator (expensive)
     // --------------------
+    //调用DCM、EKF算法估计飞行器的姿态和位置信息，并更新旋转矩阵
     read_AHRS();
 
 #if FRAME_CONFIG == HELI_FRAME
@@ -237,12 +183,13 @@ void Copter::fast_loop()
 
     // Inertial Nav
     // --------------------
+    //根据AHRS估计值更新惯性导航模块的位置和速度信息
     read_inertia();
 
     // check if ekf has reset target heading or position
     check_ekf_reset();
 
-    // run the attitude controllers
+    //更新飞行模式
     update_flight_mode();
 
     // update home from EKF if necessary
@@ -271,6 +218,28 @@ void Copter::rc_loop()
     read_radio();
     read_control_switch();
 }
+
+void Copter::update_camera()
+{
+   /*
+    while (hal.console->available()) {
+        hal.uartB->write(hal.console->read());
+    }
+    // send GPS characters to the console
+    while (hal.uartB->available()) {
+        hal.console->write(hal.uartB->read());
+
+    */
+
+    int16_t numc = hal.uartD->available();
+    for (int16_t i = 0; i < numc; i++) {        // Process bytes received
+        hal.console->write(hal.uartD->read());
+    }
+
+    hal.console->printf("uartE: %d bytes",numc);
+
+}
+
 
 // throttle_loop - should be run at 50 hz
 // ---------------------------

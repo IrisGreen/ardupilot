@@ -113,6 +113,7 @@ enum control_mode_t {
     SMART_RTL =    21,  // SMART_RTL returns to home by retracing its steps
     FLOWHOLD  =    22,  // FLOWHOLD holds position with optical flow without rangefinder
     FOLLOW    =    23,  // follow attempts to follow another vehicle or ground station
+    NEWMODE   =    24,  // define a new_mode
 };
 
 enum mode_reason_t {
@@ -205,6 +206,7 @@ enum AutoMode {
     Auto_NavGuided,
     Auto_Loiter,
     Auto_NavPayloadPlace,
+    Auto_NewM,
 };
 
 // Guided modes
@@ -232,6 +234,15 @@ enum SmartRTLState {
     SmartRTL_PreLandPosition,
     SmartRTL_Descend,
     SmartRTL_Land
+};
+
+// NewMode states
+enum NewModeState {
+    NewM_InitialClimb,
+    NewM_ReturnHome,
+    NewM_LoiterAtHome,
+    NewM_Descent,
+    NewM_Land
 };
 
 // Alt_Hold states

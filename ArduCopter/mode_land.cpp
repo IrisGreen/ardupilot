@@ -19,8 +19,8 @@ bool Copter::ModeLand::init(bool ignore_checks)
     }
 
     // initialize vertical speeds and leash lengths
-    pos_control->set_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());
-    pos_control->set_accel_z(wp_nav->get_accel_z());
+    pos_control->set_speed_z(wp_nav->get_speed_down(), wp_nav->get_speed_up());   // 得到上升和下降速度,默认 2.5 & 1.5
+    pos_control->set_accel_z(wp_nav->get_accel_z());                              // 得到竖直方向上的加速度,默认1
 
     // initialise position and desired velocity
     if (!pos_control->is_active_z()) {
@@ -71,7 +71,7 @@ void Copter::ModeLand::gps_run()
     motors->set_desired_spool_state(AP_Motors::DESIRED_THROTTLE_UNLIMITED);
     
     // pause before beginning land descent
-    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {
+    if(land_pause && millis()-land_start_time >= LAND_WITH_DELAY_MS) {   // when land mode start, land_pause = false
         land_pause = false;
     }
     

@@ -44,7 +44,7 @@ void Copter::ModeAltHold::run()
 
     // Alt Hold State Machine Determination
     if (!motors->armed() || !motors->get_interlock()) {
-        althold_state = AltHold_MotorStopped;
+        althold_state = AltHold_MotorStopped;       //电机未解锁
     } else if (takeoff.running() || takeoff.triggered(target_climb_rate)) {
         althold_state = AltHold_Takeoff;
     } else if (!ap.auto_armed || ap.land_complete) {

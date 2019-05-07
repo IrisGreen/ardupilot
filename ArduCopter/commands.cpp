@@ -5,6 +5,11 @@ void Copter::update_home_from_EKF()
 {
     // exit immediately if home already set
     if (ahrs.home_is_set()) {
+        if(gps_lock_flag)
+        {
+        AP_Notify::events.gps_locked = 1;
+        gps_lock_flag = false;
+        }
         return;
     }
 
@@ -68,6 +73,7 @@ bool Copter::set_home(const Location& loc, bool lock)
     }
 
     // check home is close to EKF origin
+    // 超过50km
     if (far_from_EKF_origin(loc)) {
         return false;
     }
@@ -96,7 +102,7 @@ bool Copter::set_home(const Location& loc, bool lock)
     }
 
     // lock home position
-    if (lock) {
+    if (lock) {   //false
         ahrs.lock_home();
     }
 

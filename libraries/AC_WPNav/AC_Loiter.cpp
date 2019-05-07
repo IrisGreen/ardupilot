@@ -126,6 +126,7 @@ void AC_Loiter::init_target()
     _predicted_accel = _desired_accel;
     // update angle targets that will be passed to stabilize controller
     float roll_cd, pitch_cd;
+    //把roll pitch 上的倾斜角度转换成lat lon上的加速度
     _pos_control.accel_to_lean_angles(_predicted_accel.x, _predicted_accel.y, roll_cd, pitch_cd);
     _predicted_euler_angle.x = radians(roll_cd*0.01);
     _predicted_euler_angle.y = radians(pitch_cd*0.01);

@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Range: 10 1000
     // @Increment: 50
     // @User: Standard
-    AP_GROUPINFO("SPEED_UP",    2, AC_WPNav, _wp_speed_up_cms, WPNAV_WP_SPEED_UP),
+    AP_GROUPINFO("SPEED_UP",    2, AC_WPNav, _wp_speed_up_cms, WPNAV_WP_SPEED_UP),       // 2.5m/s
 
     // @Param: SPEED_DN
     // @DisplayName: Waypoint Descent Speed Target
@@ -40,7 +40,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Range: 10 500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),
+    AP_GROUPINFO("SPEED_DN",    3, AC_WPNav, _wp_speed_down_cms, WPNAV_WP_SPEED_DOWN),   // 1.5m/s
 
     // @Param: ACCEL
     // @DisplayName: Waypoint Acceleration 
@@ -49,7 +49,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
     // @Range: 50 500
     // @Increment: 10
     // @User: Standard
-    AP_GROUPINFO("ACCEL",       5, AC_WPNav, _wp_accel_cmss, WPNAV_ACCELERATION),
+    AP_GROUPINFO("ACCEL",       5, AC_WPNav, _wp_accel_cmss, WPNAV_ACCELERATION),        // 1m/s2
 
     // @Param: ACCEL_Z
     // @DisplayName: Waypoint Vertical Acceleration
@@ -135,6 +135,7 @@ void AC_WPNav::update_brake(float ekfGndSpdLimit, float ekfNavVelGainScaler)
 void AC_WPNav::wp_and_spline_init()
 {
     // check _wp_accel_cmss is reasonable
+    // 如果设置的加速度不对，采用默认的加速度1m/s2
     if (_wp_accel_cmss <= 0) {
         _wp_accel_cmss.set_and_save(WPNAV_ACCELERATION);
     }

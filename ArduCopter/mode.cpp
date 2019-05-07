@@ -154,6 +154,11 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
             ret = &mode_follow;
             break;
 #endif
+#if MODE_NEWMODE_ENABLED == ENABLED
+        case NEWMODE:
+            ret = &mode_newmode;
+            break;
+#endif
 
         default:
             break;
@@ -170,7 +175,7 @@ Copter::Mode *Copter::mode_from_mode_num(const uint8_t mode)
 bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 {
 
-    // return immediately if we are already in the desired mode
+    // 已经是期望模式，立即返回true
     if (mode == control_mode) {
         control_mode_reason = reason;
         return true;
@@ -178,14 +183,15 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
 
     Copter::Mode *new_flightmode = mode_from_mode_num(mode);
     if (new_flightmode == nullptr) {
-        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode");
-        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
+        gcs().send_text(MAV_SEVERITY_WARNING,"No such mode"); //没有这种模式
+        Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);    //错误写入日志
         return false;
     }
 
-    bool ignore_checks = !motors->armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    bool ignore_checks = !motors->armed();   // 如果电机正常，允许切换为任何一种模式
 
-#if FRAME_CONFIG == HELI_FRAME
+    //飞机框架为直升机
+    #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
     if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()){
@@ -195,6 +201,7 @@ bool Copter::set_mode(control_mode_t mode, mode_reason_t reason)
     }
 #endif
 
+    //电机处于报警状态，立即返回false，错误写入日志
     if (!new_flightmode->init(ignore_checks)) {
         gcs().send_text(MAV_SEVERITY_WARNING,"Flight mode change failed");
         Log_Write_Error(ERROR_SUBSYSTEM_FLIGHT_MODE,mode);
@@ -262,6 +269,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
 #endif
 
     // stop mission when we leave auto mode
+    //自动模式下在执行任务，需要停止任务
 #if MODE_AUTO_ENABLED == ENABLED
     if (old_flightmode == &mode_auto) {
         if (mission.state() == AP_Mission::MISSION_RUNNING) {
@@ -289,6 +297,7 @@ void Copter::exit_mode(Copter::Mode *&old_flightmode,
     }
 #endif
 
+    //飞机框架为直升机
 #if FRAME_CONFIG == HELI_FRAME
     // firmly reset the flybar passthrough to false when exiting acro mode.
     if (old_flightmode == &mode_acro) {
@@ -327,14 +336,16 @@ void Copter::Mode::update_navigation()
 void Copter::Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const
 {
     // fetch roll and pitch inputs
+    // 获得遥控器的roll pitch 输入
     roll_out = channel_roll->get_control_in();
     pitch_out = channel_pitch->get_control_in();
 
 	// limit max lean angle
+    // 限制angle_limit在10度到angle_max之间
     angle_limit = constrain_float(angle_limit, 1000.0f, angle_max);
 
     // scale roll and pitch inputs to ANGLE_MAX parameter range
-    float scaler = angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;
+    float scaler = angle_max/(float)ROLL_PITCH_YAW_INPUT_MAX;  //4500
     roll_out *= scaler;
     pitch_out *= scaler;
 
@@ -435,10 +446,11 @@ void Copter::Mode::land_run_vertical_control(bool pause_descent)
         // Constrain the demanded vertical velocity so that it is between the configured maximum descent speed and the configured minimum descent speed.
         cmb_rate = constrain_float(cmb_rate, max_land_descent_velocity, -abs(g.land_speed));
 
+        // 只有在激光测距仪有效时才会进入
         if (doing_precision_landing && copter.rangefinder_alt_ok() && copter.rangefinder_state.alt_cm > 35.0f && copter.rangefinder_state.alt_cm < 200.0f) {
-            float max_descent_speed = abs(g.land_speed)/2.0f;
+            float max_descent_speed = abs(g.land_speed)/2.0f;  // 最大下降速度变为限制速度的一半
             float land_slowdown = MAX(0.0f, pos_control->get_horizontal_error()*(max_descent_speed/precland_acceptable_error));
-            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);
+            cmb_rate = MIN(-precland_min_descent_speed, -max_descent_speed+land_slowdown);  // 限制下降速度
         }
     }
 
@@ -463,10 +475,10 @@ void Copter::Mode::land_run_horizontal_control()
 
     // process pilot inputs
     if (!copter.failsafe.radio) {
-        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
+        if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){  // if throttle > 700, land cancelled
             copter.Log_Write_Event(DATA_LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
-            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {
+            if (!set_mode(LOITER, MODE_REASON_THROTTLE_LAND_ESCAPE)) {    // first set mode to LOITER, if NOT success, then set to ALT_HOLD
                 set_mode(ALT_HOLD, MODE_REASON_THROTTLE_LAND_ESCAPE);
             }
         }
@@ -483,7 +495,6 @@ void Copter::Mode::land_run_horizontal_control()
                 ap.land_repo_active = true;
             }
         }
-
         // get pilot's desired yaw rate
         target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
     }
